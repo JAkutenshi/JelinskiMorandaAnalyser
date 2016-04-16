@@ -1,25 +1,19 @@
 package com.jakutenshi;
 
 import java.io.*;
-import java.lang.reflect.Array;
-import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-/**
- * Created by JAkutenshi on 16.04.2016.
- */
 public class Main {
-
-
     public static void main(String[] args) throws FileNotFoundException {
-        double[][] X = new double[9][];
-        double sumX = 0;
-        double sumXI = 0;
-        double A = 0;
-        double condition = 0;
+        double[][] X = new double[9][]; // 9 массивов входных распределений, по 3 на каждое по 30, 24 и 18 ошибок
+        double sumX; // Сумма интервалов
+        double sumXI; // Сумма произведений интервала на номер ошибки
+        double A; // Отношение sum(Xi) и sum(i * Xi)
+        double condition; // условие сходимости ряда (n + 1) / 2
 
+        //перенаправления вывода в файл
         File file = new File( "output.txt" );
         PrintStream out = new PrintStream(file);
         System.setOut(out);
@@ -33,27 +27,26 @@ public class Main {
             i++;
         }
 
-
         //сортировка массивов по возрастанию
         for (int a = 0; a < 9; a++) {
             Arrays.sort(X[a]);
         }
 
         //анализ
-        int n = 0;
-        int m;
-        double fm;
-        ArrayList<Double> fmList;
-        double gm;
-        ArrayList<Double> gmList;
-        double subFG;
-        ArrayList<Double> subFGList;
-        int minM;
-        double tmp;
-        double tmpM;
-        //результат
-        int B = 0;
-        double K = 0;
+        int n;
+        int m; // найденные ошибки в будущем
+        double fm; // f(m)
+        ArrayList<Double> fmList; // список из f(m)
+        double gm; // g(m)
+        ArrayList<Double> gmList; // список из g(m)
+        double subFG; // |f(m) - g(m)|
+        ArrayList<Double> subFGList; // список из |f(m) - g(m)|
+        int minM; // м, при которых разница |f(m) - g(m)| минимальна
+        double tmp; // временная переменная, используется для нахождения суммы вида sum(1/i)
+
+        //результаты
+        int B;
+        double K;
         int Tk;
 
         for (int a = 0; a < 9; a++) {
@@ -111,25 +104,31 @@ public class Main {
             if (A > condition) {
                 //если ряд сходится, то анализируем дальше
                 while (true) {
+                    // f(m)  = sum (m / (m - i))
                     for (i = 1; i <= n; i++) {
                         fm += (double) 1 / (m - i);
                     }
                     fmList.add(fm);
+                    // g(m)
                     gm = n / (m - A);
                     gmList.add(gm);
+                    // разница |g(m) - f(m)| -> 0
                     subFG = Math.abs(fm - gm);
                     subFGList.add(subFG);
+                    // если ряд расходится, то мы нашли Mmin
                     if (subFGList.size() > 2 && subFGList.get(subFGList.size() - 2) < subFGList.get(subFGList.size() - 1)) {
                         minM = m - 1;
                         break;
                     }
                     if (m == 100) {
+                        // если ряд сходится долго
                         System.out.println("M == 100, too long ");
                         break;
                     }
                     m++;
                     fm = 0;
                 }
+                // таблица найденных в будущем ошибок и поиск решения уравнения f(m) = g(m, A)
                 System.out.printf("|\tm\t|\tf(m)\t|\tg(m)\t|\tdelta\t|\n");
                 for (i = 0; i < fmList.size(); i++) {
                     System.out.printf("|\t%d\t|\t%7.4f\t|\t%7.4f\t|\t%7.4f\t|\n",
@@ -139,14 +138,17 @@ public class Main {
                             subFGList.get(i));
                 }
                 System.out.printf("Min delta with M = %d\n", minM);
+                // Оценка максимального правдоподобия для количества оставшихся ошибок в программе
                 B = minM - 1;
                 System.out.printf("B = %d\n", B);
+                //Коэффициент масштабирования
                 K = n / ((B - 1) * sumX - sumXI);
                 System.out.printf("K = %7.4f\n", K);
                 tmp = 0;
                 for (i = 1; i <= B - n; i++) {
                     tmp += (double) 1 / i;
                 }
+                // Время на исправление всех ошибок
                 Tk = (int) (tmp / K);
                 System.out.printf("Tk = %d days\n", Tk);
             } else {
@@ -159,18 +161,18 @@ public class Main {
 
     }
 
-    static double[] uniformDistibution(int n) {
+    // выдает массив с равномерным распределением
+    private static double[] uniformDistibution(int n) {
         double[] X = new double[n];
-        Random random = new Random();
         for (int i = 0; i < n; i++) {
             X[i] = randomDoubleWithBorder(20);
         }
         return X;
     }
 
-    static double[] exponentialDistibution(int n) {
+    // выдает массив с экспоненциальным распределением
+    private static double[] exponentialDistibution(int n) {
         double[] X = new double[n];
-        Random random = new Random();
         for (int i = 0; i < n; i++) {
             X[i] = -Math.log(randomDoubleWithBorder(1)) / 0.1;
             if (X[i] == Double.POSITIVE_INFINITY) {
@@ -180,7 +182,8 @@ public class Main {
         return X;
     }
 
-    static double[] rayleighDistibution(int n) {
+    // выдает массив с релеевским распределением
+    private static double[] rayleighDistibution(int n) {
         double[] X = new double[n];
 
         for (int i = 0; i < n; i++) {
@@ -192,16 +195,17 @@ public class Main {
         return X;
     }
 
-    static double randomDoubleWithBorder(int border) {
+    // Выдает случайное число с плавающей точкой с заданной границей t
+    private static double randomDoubleWithBorder(int border) {
         Random random = new Random();
         return ((double) random.nextInt(border * 100)) / 100;
     }
 
-    static void outArray(double[] a) {
+    // Форматированный вывод массива распределения
+    private static void outArray(double[] a) {
         System.out.printf("|\ti\t|\tXi\t|\n");
         for (int i = 0; i < a.length; i++) {
             System.out.printf("|\t%d\t|\t%7.4f\t|\n", i + 1, a[i]);
         }
-
     }
 }
