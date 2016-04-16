@@ -104,7 +104,7 @@ public class Main {
             fmList = new ArrayList<Double>(100);
             gmList = new ArrayList<Double>(100);
             subFGList = new ArrayList<Double>(100);
-            minM = -1;
+            minM = 100;
 
             //расчет
             condition = (n - 1) / 2;
