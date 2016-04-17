@@ -43,6 +43,7 @@ public class Main {
         ArrayList<Double> subFGList; // список из |f(m) - g(m)|
         int minM; // м, при которых разница |f(m) - g(m)| минимальна
         double tmp; // временная переменная, используется для нахождения суммы вида sum(1/i)
+        double[] XiAfter; // массив промежутков времени, за которые будут найдены оставшиеся ошибки
 
         //результаты
         int B;
@@ -142,14 +143,18 @@ public class Main {
                 B = minM - 1;
                 System.out.printf("B = %d\n", B);
                 //Коэффициент масштабирования
-                K = n / ((B - 1) * sumX - sumXI);
+                K = n / ((B + 1) * sumX - sumXI);
                 System.out.printf("K = %7.4f\n", K);
-                tmp = 0;
-                for (i = 1; i <= B - n; i++) {
-                    tmp += (double) 1 / i;
+                // Времена на исправление оставшихся ошибок
+                System.out.printf("|\tm\t|\tXi\t|\n");
+                XiAfter = new double[B - n];
+                for (i = 0; i < XiAfter.length; i++) {
+                    XiAfter[i] = 1 / (K * (i + 1));
+                    System.out.printf("|\t%d\t|\t%7.4f\t|\n", (n + i + 1), XiAfter[i]);
+                    sumX += XiAfter[i];
                 }
                 // Время на исправление всех ошибок
-                Tk = (int) (tmp / K);
+                Tk = (int) sumX;
                 System.out.printf("Tk = %d days\n", Tk);
             } else {
                 System.out.println("A < condition !");
